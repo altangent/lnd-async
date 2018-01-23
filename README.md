@@ -1,5 +1,5 @@
 # lnd-async
-This library simplifies connecting to Lightning Network Daemon via gRPC. It also wraps all callback functions in promises to make api calls easier to work with.
+This library simplifies connecting to the Bitcoin Lightning Network Daemon via gRPC. It also wraps all callback functions in promises to make api calls easier to work with. Currently supports lnd version 0.3.0-alpha. 
 
 The default behavior assumes LND is running on `localhost` port `10009`. It also assumes that macaroons are enabled and the `tls.cert` and `admin.macaroon` are found in the OS specific default data paths.
 

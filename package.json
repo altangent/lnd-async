@@ -1,6 +1,6 @@
 {
   "name": "lnd-async",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lightning Network Daemon (LND) gRPC client with native promise support",
   "main": "lib/lnd-async",
   "engines": {
@@ -20,9 +20,9 @@
     "lnd",
     "async",
     "promise",
-    "lightning",
-    "newtork",
-    "daemon"
+    "lightning network",
+    "bitcoin",
+    "litecoin"
   ],
   "author": "Brian Mancini <bmancini@gmail.com>",
   "license": "MIT",
