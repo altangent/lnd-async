@@ -1,9 +1,13 @@
 # lnd-async
-This library simplifies connecting to the Bitcoin Lightning Network Daemon via gRPC. It also wraps all callback functions in promises to make api calls easier to work with. Currently supports lnd version 0.3.0-alpha. 
+
+This library simplifies connecting to the Bitcoin Lightning Network Daemon via gRPC. It also wraps all callback functions in promises to make api calls easier to work with.
+
+This project currently supports LND version 0.3.0-alpha as of commit e5f9b28e395507d860fb2d08c2f01f5889c14e39 on Feb 24, 2018. Because breaking changes are introduced via LND, this project will perform semver increments as bug fixes until LND is stabiliized.
 
 The default behavior assumes LND is running on `localhost` port `10009`. It also assumes that macaroons are enabled and the `tls.cert` and `admin.macaroon` are found in the OS specific default data paths.
 
 To establish a connection to gRPC `localhost:10009` with macaroons:
+
 ```javascript
 const lnd = require('lnd-async');
 
@@ -14,13 +18,14 @@ async function getInfo() {
 ```
 
 This call can be customized to meet your specific needs:
+
 ```javascript
 const lnd = require('lnd-async');
 
 async function getInfo() {
-  let client = await lnd.connect({ 
-    lndHost: '10.10.0.12', 
-    lndPort: 10019, 
+  let client = await lnd.connect({
+    lndHost: '10.10.0.12',
+    lndPort: 10019,
     certPath: __dirname + '/tls.cert',
     macaroonPath: __dirname + '/admin.macaroon',
   });
@@ -29,6 +34,7 @@ async function getInfo() {
 ```
 
 You can also initiate calls with no macaroons by passing the `noMacaroons` flag. When this option is supplied, the `macaroonPath` is ignored.
+
 ```javascript
 const lnd = require('lnd-async');
 
