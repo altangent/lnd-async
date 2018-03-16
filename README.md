@@ -1,8 +1,8 @@
 # lnd-async
 
-This library simplifies connecting to the Bitcoin Lightning Network Daemon via gRPC. It also wraps all callback functions in promises to make api calls easier to work with.
+This library simplifies connecting to the Bitcoin Lightning Network Daemon via gRPC. It wraps all callback functions in promises to make api calls easier to work with.
 
-This project currently supports LND version 0.3.0-alpha as of commit e5f9b28e395507d860fb2d08c2f01f5889c14e39 on Feb 24, 2018. Because breaking changes are introduced via LND, this project will perform semver increments as bug fixes until LND is stabiliized.
+This library supports LND version 0.4.0-beta as of Mar 16, 2018.
 
 The default behavior assumes LND is running on `localhost` port `10009`. It also assumes that macaroons are enabled and the `tls.cert` and `admin.macaroon` are found in the OS specific default data paths.
 
@@ -43,3 +43,7 @@ async function getInfo() {
   return await client.getInfo({});
 }
 ```
+
+## Versions
+
+* 1.1.0 - Support for 0.4.0-beta
