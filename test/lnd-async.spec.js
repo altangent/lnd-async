@@ -9,10 +9,12 @@ describe('lnd-async', () => {
   });
 
   let tests = [
-    { method: 'genSeed', expect: 'GenSeedRequest' },
+    // service WalletUnlocker
+    { method: 'genSeed' },
     { method: 'initWallet' },
     { method: 'unlockWallet' },
-    { method: 'initWallet' },
+
+    // service Lightning
     { method: 'walletBalance' },
     { method: 'channelBalance' },
     { method: 'getTransactions' },
@@ -39,6 +41,7 @@ describe('lnd-async', () => {
     { method: 'lookupInvoice' },
     { method: 'subscribeInvoices', isStream: true },
     { method: 'decodePayReq' },
+    { method: 'listPayments' },
     { method: 'deleteAllPayments' },
     { method: 'describeGraph' },
     { method: 'getChanInfo' },
