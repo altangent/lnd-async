@@ -33,6 +33,22 @@ async function getInfo() {
 }
 ```
 
+You can also specify `cert` and `macaroon` as base64 encoded string. Usefull if you do not want to keep them on the server.
+
+``javascript
+const lnd = require('lnd-async');
+
+async function getInfo() {
+  let client = await lnd.connect({
+    lndHost: '10.10.0.12',
+    lndPort: 10019,
+    cert: 'base64 cert',
+    macaroon: 'base64 macaroon',
+  });
+  return await client.getInfo({});
+}
+```
+
 You can also initiate calls with no macaroons by passing the `noMacaroons` flag. When this option is supplied, the `macaroonPath` is ignored.
 
 ```javascript
