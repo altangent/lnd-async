@@ -35,7 +35,7 @@ async function getInfo() {
 
 You can also specify `cert` and `macaroon` as base64 encoded string. Usefull if you do not want to keep them on the server.
 
-``javascript
+```javascript
 const lnd = require('lnd-async');
 
 async function getInfo() {
