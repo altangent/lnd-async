@@ -62,6 +62,7 @@ async function getInfo() {
 
 ## Versions
 
+* 1.4.0 - Support for base64 macaroon and cert files
 * 1.3.0 - Support for 0.4.2-beta
 * 1.2.0 - Support for 0.4.1-beta
 * 1.1.0 - Support for 0.4.0-beta
