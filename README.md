@@ -60,9 +60,28 @@ async function getInfo() {
 }
 ```
 
+### TypeScript
+
+This library includes type definitions for TypeScript. These definitions are for the most part generated from `lib/rpc.proto`, with some manual tweaks on top. This means that there might be errors in the typings, particularely on returns values there an event stream is returned (`openChannel`, `sendPayment` and others).
+
+The types (which were later manually modified) were generated using [`pbjs`](https://github.com/dcodeIO/protobuf.js), with the following command:
+
+```bash
+pbjs --keep-case \
+  -t static-module lib/rpc.proto \
+  --wrap commonjs \
+  --no-convert \
+  --no-decode \
+  --no-verify \
+  --no-encode \
+  --no-create \
+  | pbts --out lib/lnd-async.d.ts \
+  --name \"lnd-async\" -
+```
+
 ## Versions
 
-* 1.4.0 - Support for base64 macaroon and cert files
-* 1.3.0 - Support for 0.4.2-beta
-* 1.2.0 - Support for 0.4.1-beta
-* 1.1.0 - Support for 0.4.0-beta
+- 1.4.0 - Support for base64 macaroon and cert files
+- 1.3.0 - Support for 0.4.2-beta
+- 1.2.0 - Support for 0.4.1-beta
+- 1.1.0 - Support for 0.4.0-beta

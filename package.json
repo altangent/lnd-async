@@ -13,6 +13,7 @@
   "author": "Brian Mancini <bmancini@gmail.com>",
   "license": "MIT",
   "main": "lib/lnd-async",
+  "types": "lib/lnd-async.d.ts",
   "engines": {
     "node": ">= 7.6.0"
   },
