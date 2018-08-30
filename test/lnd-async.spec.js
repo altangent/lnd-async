@@ -13,7 +13,7 @@ describe('lnd-async', () => {
     { method: 'genSeed' },
     { method: 'initWallet' },
     { method: 'unlockWallet' },
-
+    { method: 'changePassword' },
     // service Lightning
     { method: 'walletBalance' },
     { method: 'channelBalance' },
@@ -31,11 +31,14 @@ describe('lnd-async', () => {
     { method: 'getInfo' },
     { method: 'pendingChannels' },
     { method: 'listChannels' },
+    { method: 'closedChannels' },
     { method: 'openChannelSync' },
     { method: 'openChannel', isStream: true },
     { method: 'closeChannel', isStream: true },
     { method: 'sendPayment', isStream: true },
     { method: 'sendPaymentSync' },
+    { method: 'sendToRoute', isStream: true },
+    { method: 'sendToRouteSync' },
     { method: 'addInvoice' },
     { method: 'listInvoices' },
     { method: 'lookupInvoice' },
