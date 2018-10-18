@@ -1,6 +1,6 @@
 {
   "name": "lnd-async",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Lightning Network Daemon (LND) gRPC client with native promise support",
   "keywords": [
     "lnd",
@@ -32,13 +32,13 @@
   },
   "dependencies": {
     "@grpc/proto-loader": "^0.3.0",
-    "grpc": "^1.14.1"
+    "grpc": "^1.15.1"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
+    "chai": "^4.2.0",
     "eslint": "^4.19.1",
     "mocha": "^5.2.0",
-    "prettier": "^1.14.2",
+    "prettier": "^1.14.3",
     "sinon": "^4.5.0"
   }
 }
