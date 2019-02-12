@@ -60,6 +60,25 @@ async function getInfo() {
 }
 ```
 
+### Long integer treatment
+
+The JavaScript Number type internally stores values as IEEE 754 floating point values. The max safe integer value is 2^53-1 which can result in data loss for 64-bit integers.
+
+**By default and for maximum portability, long values are returned as strings.** This allows the consumer of the data to convert the long integers using any big number library they prefer.
+
+`grpc-node` has [accomodations](https://github.com/dcodeIO/protobuf.js/blob/master/README.md#compatibility) for automatic number type conversion to [`Long.js`](https://github.com/dcodeIO/long.js). If you do not install `Long.js`, longs will be treated as JavaScript `Number` type and data loss may occur.
+
+`lnd-async` allows customization of this handling via the setting `longsAsNumbers`. Setting this value to `true` will pass the `Number` setting in `grpc-node`. By default, this value is set to false to prevent data loss.
+
+```javascript
+const lnd = require('lnd-async');
+
+async function getInfo() {
+  let client = await lnd.connect({ longsAsNumbers: true });
+  return await client.getInfo({});
+}
+```
+
 ## Versions
 
 - 1.6.0 - Support for 0.5.2-beta

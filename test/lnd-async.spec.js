@@ -5,7 +5,10 @@ describe('lnd-async', () => {
   let _client;
 
   before(async () => {
-    _client = await sut.connect();
+    _client = await sut.connect({
+      macaroonPath:
+        '/Users/bmancini/Library/Application Support/Lnd/data/chain/bitcoin/mainnet/admin.macaroon',
+    });
   });
 
   let tests = [
