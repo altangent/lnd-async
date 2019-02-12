@@ -81,6 +81,7 @@ async function getInfo() {
 
 ## Versions
 
+- 1.7.0 - Add `longsAsNumbers` option
 - 1.6.0 - Support for 0.5.2-beta
 - 1.5.0 - Support for 0.5-beta
 - 1.4.0 - Support for base64 macaroon and cert files
