@@ -60,6 +60,12 @@ describe('lnd-async', () => {
     { method: 'feeReport' },
     { method: 'updateChannelPolicy' },
     { method: 'forwardingHistory' },
+    { method: 'subscribeChannelEvents', isStream: true },
+    { method: 'exportChannelBackup' },
+    { method: 'exportAllChannelBackups' },
+    { method: 'verifyChanBackup' },
+    { method: 'restoreChannelBackups' },
+    { method: 'subscribeChannelBackups', isStream: true },
   ];
 
   for (let test of tests) {
