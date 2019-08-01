@@ -80,6 +80,8 @@ async function getInfo() {
 ```
 
 ## Versions
+
+- 1.9.0 - Support for 0.7.1-beta
 - 1.8.0 - Support for 0.6.1-beta
 - 1.7.0 - Add `longsAsNumbers` option
 - 1.6.0 - Support for 0.5.2-beta
