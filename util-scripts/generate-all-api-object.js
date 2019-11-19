@@ -7,7 +7,8 @@ const writeFile = util.promisify(fs.writeFile)
 ;(async () => {
   // non-srteam
   let output = await processLineByLine(process.argv[2]);
-  await writeFile(process.argv[3], `module.exports = ${JSON.stringify(output, null,2)};
+  await writeFile(process.argv[3], `/* eslint-disable quotes */\nmodule.exports = ${JSON.stringify(output, null,2)};
+/* eslint-enable */
 `)
 })();
 
