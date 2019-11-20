@@ -4,9 +4,9 @@ Here are utility scripts (bash) for generating some repository files from LND re
 
 This script copies only proto files from lnd to lib/original-lnd-protos with directory structure keeping.
 
-2. generate-stream-cb-api.sh
+2. generate-all-api-object.sh
 
-This file generates service name config files for all methods in JS files (lib/callback-apis.js & stream-apis.js)
+This file generates full JSON structure of all API methods of all sub-servers.
 
 3. This script runs all above listed scripts:
 
