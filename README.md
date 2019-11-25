@@ -81,6 +81,7 @@ async function getInfo() {
 
 ## Versions
 
+- 4.0.0 - Updated for 0.8.1-beta, now includes all proto services
 - 3.0.0 - Support for 0.8.0-beta
 - 2.0.0 - Support for 0.7.1-beta, switching to valid SEMVER release format
 - 1.8.0 - Support for 0.6.1-beta
