@@ -1,6 +1,6 @@
 {
   "name": "lnd-async",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Lightning Network Daemon (LND) gRPC client with native promise support",
   "keywords": [
     "lnd",
@@ -14,7 +14,7 @@
   "license": "MIT",
   "main": "lib/lnd-async",
   "engines": {
-    "node": ">= 7.6.0"
+    "node": ">= 10.0.0"
   },
   "directories": {
     "lib": "lib"
@@ -31,8 +31,9 @@
     "test": "mocha"
   },
   "dependencies": {
-    "@grpc/proto-loader": "^0.3.0",
-    "grpc": "^1.15.1"
+    "@grpc/proto-loader": "^0.5.3",
+    "grpc": "^1.24.0",
+    "protobufjs": "^6.8.8"
   },
   "devDependencies": {
     "chai": "^4.2.0",
