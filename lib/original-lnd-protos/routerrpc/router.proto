@@ -77,6 +77,11 @@ message SendPaymentRequest {
     */
     uint64 outgoing_chan_id = 8 [jstype = JS_STRING];
 
+    /**
+    The pubkey of the last hop of the route. If empty, any hop may be used.
+    */
+    bytes last_hop_pubkey = 14;
+
     /** 
     An optional maximum total time lock for the route. This should not exceed
     lnd's `--max-cltv-expiry` setting. If zero, then the value of
@@ -92,9 +97,23 @@ message SendPaymentRequest {
     /** 
     An optional field that can be used to pass an arbitrary set of TLV records
     to a peer which understands the new records. This can be used to pass
-    application specific data during the payment attempt.
+    application specific data during the payment attempt. Record types are
+    required to be in the custom range >= 65536. When using REST, the values
+    must be encoded as base64.
     */
-    map<uint64, bytes> dest_tlv = 11;
+    map<uint64, bytes> dest_custom_records = 11;
+
+    /// If set, circular payments to self are permitted.
+    bool allow_self_payment = 15;
+
+    /**
+    Features assumed to be supported by the final node. All transitive feature
+    depdencies must also be set properly. For a given feature bit pair, either
+    optional or remote may be set, but not both. If this field is nil or empty,
+    the router will try to load destination features from the graph as a
+    fallback.
+    */
+    repeated lnrpc.FeatureBit dest_features = 16;
 }
 
 message TrackPaymentRequest {
@@ -134,6 +153,11 @@ enum PaymentState {
     invalid final cltv delta)
     */
     FAILED_INCORRECT_PAYMENT_DETAILS = 5;
+
+    /**
+    Insufficient local balance.
+    */
+    FAILED_INSUFFICIENT_BALANCE = 6;
 }
 
 
@@ -150,6 +174,11 @@ message PaymentStatus {
     The taken route when state is SUCCEEDED.
     */
     lnrpc.Route route = 3;
+
+    /**
+    The HTLCs made in attempt to settle the payment [EXPERIMENTAL].
+    */
+    repeated lnrpc.HTLCAttempt htlcs = 4;
 }
 
 
@@ -227,6 +256,7 @@ message Failure {
         PERMANENT_NODE_FAILURE = 20;
         PERMANENT_CHANNEL_FAILURE = 21;
         EXPIRY_TOO_FAR = 22;
+        MPP_TIMEOUT = 23;
 
         /**
         The error source is known, but the failure itself couldn't be decoded.
@@ -381,14 +411,31 @@ message PairHistory {
 }
 
 message PairData {
-    /// Time stamp of last result.
-    int64 timestamp = 1 [json_name = "timestamp"];
+    /// Time of last failure.
+    int64 fail_time = 1 [json_name = "fail_time"];
 
-    /// Minimum penalization amount (only applies to failed attempts).
-    int64 min_penalize_amt_sat = 2 [json_name = "min_penalize_amt_sat"];
+    /**
+    Lowest amount that failed to forward rounded to whole sats. This may be
+    set to zero if the failure is independent of amount.
+    */
+    int64 fail_amt_sat = 2 [json_name = "fail_amt_sat"];
 
-    /// Whether the last payment attempt through this pair was successful.
-    bool last_attempt_successful = 3 [json_name = "last_attempt_successful"];
+    /**
+    Lowest amount that failed to forward in millisats. This may be
+    set to zero if the failure is independent of amount.
+    */
+    int64 fail_amt_msat = 4 [json_name = "fail_amt_msat"];
+
+    reserved 3;
+
+    /// Time of last success.
+    int64 success_time = 5 [json_name = "success_time"];
+
+    /// Highest amount that we could successfully forward rounded to whole sats.
+    int64 success_amt_sat = 6 [json_name = "success_amt_sat"];
+
+    /// Highest amount that we could successfully forward in millisats.
+    int64 success_amt_msat = 7 [json_name = "success_amt_msat"];
 }
 
 message QueryProbabilityRequest{
