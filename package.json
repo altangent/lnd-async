@@ -31,9 +31,9 @@
     "test": "mocha"
   },
   "dependencies": {
-    "@grpc/proto-loader": "^0.5.3",
+    "@grpc/proto-loader": "^0.5.6",
     "grpc": "^1.24.0",
-    "protobufjs": "^6.8.8"
+    "protobufjs": "^6.10.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
