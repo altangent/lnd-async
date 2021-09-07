@@ -2,7 +2,7 @@
 
 This library simplifies connecting to the Bitcoin Lightning Network Daemon via gRPC. It wraps all callback functions in promises to make api calls easier to work with.
 
-This library supports LND version 0.6.1-beta.
+This library supports LND version 0.13.1-beta.
 
 The default behavior assumes LND is running on `localhost` port `10009`. It also assumes that macaroons are enabled and the `tls.cert` and `admin.macaroon` are found in the OS specific default data paths.
 
@@ -60,6 +60,48 @@ async function getInfo() {
 }
 ```
 
+### How work with services
+
+By default the `lnd-async` uses `Lightning` service but you can call certain methods of other services:
+
+```javascript
+// The "Invoices" service for example:
+await client.Invoices.settleInvoice({preimage})
+
+// The default "Lightning" service:
+await client.connectPeer({addr: {pubkey, host}, perm: false})
+
+// The stream method:
+const grpc = require('grpc')
+let stream = client.Invoices.subscribeSingleInvoice({r_hash: hash})
+
+stream.on('data', async data => {
+    try {
+        if (data.state === 'ACCEPTED' && accepted) {
+            await accepted()
+        }
+        else if (data.state === 'SETTLED' && settled) {
+            await settled()
+            stream.cancel()
+        }
+        else if (data.state === 'CANCELED' && canceled) {
+            await canceled()
+            stream.cancel()
+        }
+    }
+    catch (e) {
+        console.error('error in data event of stream: %s', e.message)
+    }
+})
+stream.on('error', (e) => {
+    // If e.code === grpc.status.CANCELLED - it's normal cancel state of stream
+    if (e.code !== grpc.status.CANCELLED) {
+        error(e)
+    }
+})
+
+```
+
 ### Long integer treatment
 
 The JavaScript Number type internally stores values as IEEE 754 floating point values. The max safe integer value is 2^53-1 which can result in data loss for 64-bit integers.
@@ -81,6 +123,7 @@ async function getInfo() {
 
 ## Versions
 
+- 4.1.3 - Updated for v0.13.1-beta, all proto services + the update of doc
 - 4.1.0 - Updated for v0.11.1-beta, now includes all proto services
 - 4.0.0 - Updated for 0.8.1-beta, now includes all proto services
 - 3.0.0 - Support for 0.8.0-beta
