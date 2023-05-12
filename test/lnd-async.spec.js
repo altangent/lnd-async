@@ -6,14 +6,19 @@ describe('lnd-async', () => {
 
   before(async () => {
     _client = await sut.connect({
-      macaroonPath:
-        '/Users/bmancini/Library/Application Support/Lnd/data/chain/bitcoin/mainnet/admin.macaroon',
+      lndHost:      process.env.LND_ASYNC_TEST_LND_HOST      || undefined,
+      lndPort:      process.env.LND_ASYNC_TEST_LND_PORT      || undefined,
+      macaroon:     process.env.LND_ASYNC_TEST_MACAROON      || undefined,
+      macaroonPath: process.env.LND_ASYNC_TEST_MACAROON_PATH || undefined,
+      cert:         process.env.LND_ASYNC_TEST_CERT          || undefined,
+      certPath:     process.env.LND_ASYNC_TEST_CERT_PATH     || undefined,
     });
   });
 
   let tests = [
     // service WalletUnlocker
     { method: 'genSeed' },
+    { service: 'WalletUnlocker', method: 'genSeed' },
     { method: 'initWallet' },
     { method: 'unlockWallet' },
     { method: 'changePassword' },
@@ -70,7 +75,7 @@ describe('lnd-async', () => {
 
   for (let test of tests) {
     it(`.${test.method} should return a ${test.isStream ? 'stream' : 'promise'}`, () => {
-      let res = _client[test.method]({});
+      let res = (test.service ? _client[test.service][test.method] : _client[test.method])({});
       if (!test.isStream) {
         res.catch(() => {});
         expect(res instanceof Promise).to.be.true;

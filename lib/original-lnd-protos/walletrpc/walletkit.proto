@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "rpc.proto";
+import "lightning.proto";
 import "signrpc/signer.proto";
 
 package walletrpc;
@@ -12,7 +12,9 @@ option go_package = "github.com/lightningnetwork/lnd/lnrpc/walletrpc";
 service WalletKit {
     /*
     ListUnspent returns a list of all utxos spendable by the wallet with a
-    number of confirmations between the specified minimum and maximum.
+    number of confirmations between the specified minimum and maximum. By
+    default, all utxos are listed. To list only the unconfirmed utxos, set
+    the unconfirmed_only to true.
     */
     rpc ListUnspent (ListUnspentRequest) returns (ListUnspentResponse);
 
@@ -63,6 +65,62 @@ service WalletKit {
     rpc ListAccounts (ListAccountsRequest) returns (ListAccountsResponse);
 
     /*
+    RequiredReserve returns the minimum amount of satoshis that should be kept
+    in the wallet in order to fee bump anchor channels if necessary. The value
+    scales with the number of public anchor channels but is capped at a maximum.
+    */
+    rpc RequiredReserve (RequiredReserveRequest)
+        returns (RequiredReserveResponse);
+
+    /*
+    ListAddresses retrieves all the addresses along with their balance. An
+    account name filter can be provided to filter through all of the
+    wallet accounts and return the addresses of only those matching.
+    */
+    rpc ListAddresses (ListAddressesRequest) returns (ListAddressesResponse);
+
+    /*
+    SignMessageWithAddr returns the compact signature (base64 encoded) created
+    with the private key of the provided address. This requires the address
+    to be solely based on a public key lock (no scripts). Obviously the internal
+    lnd wallet has to possess the private key of the address otherwise
+    an error is returned.
+
+    This method aims to provide full compatibility with the bitcoin-core and
+    btcd implementation. Bitcoin-core's algorithm is not specified in a
+    BIP and only applicable for legacy addresses. This method enhances the
+    signing for additional address types: P2WKH, NP2WKH, P2TR.
+    For P2TR addresses this represents a special case. ECDSA is used to create
+    a compact signature which makes the public key of the signature recoverable.
+    */
+    rpc SignMessageWithAddr (SignMessageWithAddrRequest)
+        returns (SignMessageWithAddrResponse);
+
+    /*
+    VerifyMessageWithAddr returns the validity and the recovered public key of
+    the provided compact signature (base64 encoded). The verification is
+    twofold. First the validity of the signature itself is checked and then
+    it is verified that the recovered public key of the signature equals
+    the public key of the provided address. There is no dependence on the
+    private key of the address therefore also external addresses are allowed
+    to verify signatures.
+    Supported address types are P2PKH, P2WKH, NP2WKH, P2TR.
+
+    This method is the counterpart of the related signing method
+    (SignMessageWithAddr) and aims to provide full compatibility to
+    bitcoin-core's implementation. Although bitcoin-core/btcd only provide
+    this functionality for legacy addresses this function enhances it to
+    the address types: P2PKH, P2WKH, NP2WKH, P2TR.
+
+    The verification for P2TR addresses is a special case and requires the
+    ECDSA compact signature to compare the reovered public key to the internal
+    taproot key. The compact ECDSA signature format was used because there
+    are still no known compact signature schemes for schnorr signatures.
+    */
+    rpc VerifyMessageWithAddr (VerifyMessageWithAddrRequest)
+        returns (VerifyMessageWithAddrResponse);
+
+    /*
     ImportAccount imports an account backed by an account extended public key.
     The master key fingerprint denotes the fingerprint of the root key
     corresponding to the account public key (also known as the key with
@@ -90,7 +148,11 @@ service WalletKit {
     rpc ImportAccount (ImportAccountRequest) returns (ImportAccountResponse);
 
     /*
-    ImportPublicKey imports a public key as watch-only into the wallet.
+    ImportPublicKey imports a public key as watch-only into the wallet. The
+    public key is converted into a simple address of the given type and that
+    address script is watched on chain. For Taproot keys, this will only watch
+    the BIP-0086 style output script. Use ImportTapscript for more advanced key
+    spend or script spend outputs.
 
     NOTE: Events (deposits/spends) for a key will only be detected by lnd if
     they happen after the import. Rescans to detect past events will be
@@ -98,6 +160,22 @@ service WalletKit {
     */
     rpc ImportPublicKey (ImportPublicKeyRequest)
         returns (ImportPublicKeyResponse);
+
+    /*
+    ImportTapscript imports a Taproot script and internal key and adds the
+    resulting Taproot output key as a watch-only output script into the wallet.
+    For BIP-0086 style Taproot keys (no root hash commitment and no script spend
+    path) use ImportPublicKey.
+
+    NOTE: Events (deposits/spends) for a key will only be detected by lnd if
+    they happen after the import. Rescans to detect past events will be
+    supported later on.
+
+    NOTE: Taproot keys imported through this RPC currently _cannot_ be used for
+    funding PSBTs. Only tracking the balance and UTXOs is currently supported.
+    */
+    rpc ImportTapscript (ImportTapscriptRequest)
+        returns (ImportTapscriptResponse);
 
     /*
     PublishTransaction attempts to publish the passed transaction to the
@@ -201,6 +279,21 @@ service WalletKit {
     rpc FundPsbt (FundPsbtRequest) returns (FundPsbtResponse);
 
     /*
+    SignPsbt expects a partial transaction with all inputs and outputs fully
+    declared and tries to sign all unsigned inputs that have all required fields
+    (UTXO information, BIP32 derivation information, witness or sig scripts)
+    set.
+    If no error is returned, the PSBT is ready to be given to the next signer or
+    to be finalized if lnd was the last signer.
+
+    NOTE: This RPC only signs inputs (and only those it can sign), it does not
+    perform any other tasks (such as coin selection, UTXO locking or
+    input/output/fee value validation, PSBT finalization). Any input that is
+    incomplete will be skipped.
+    */
+    rpc SignPsbt (SignPsbtRequest) returns (SignPsbtResponse);
+
+    /*
     FinalizePsbt expects a partial transaction with all inputs and outputs fully
     declared and tries to sign all inputs that belong to the wallet. Lnd must be
     the last signer of the transaction. That means, if there are any unsigned
@@ -225,6 +318,14 @@ message ListUnspentRequest {
 
     // An optional filter to only include outputs belonging to an account.
     string account = 3;
+
+    /*
+    When min_confs and max_confs are zero, setting false implicitly
+    overrides max_confs to be MaxInt32, otherwise max_confs remains
+    zero. An error is returned if the value is true and both min_confs
+    and max_confs are non-zero. (default: false)
+    */
+    bool unconfirmed_only = 4;
 }
 
 message ListUnspentResponse {
@@ -286,6 +387,16 @@ message AddrRequest {
     default wallet account is used.
     */
     string account = 1;
+
+    /*
+    The type of address to derive.
+    */
+    AddressType type = 2;
+
+    /*
+    Whether a change address should be derived.
+    */
+    bool change = 3;
 }
 message AddrResponse {
     /*
@@ -299,19 +410,13 @@ enum AddressType {
     WITNESS_PUBKEY_HASH = 1;
     NESTED_WITNESS_PUBKEY_HASH = 2;
     HYBRID_NESTED_WITNESS_PUBKEY_HASH = 3;
+    TAPROOT_PUBKEY = 4;
 }
 message Account {
     // The name used to identify the account.
     string name = 1;
 
-    /*
-    The type of addresses the account supports.
-    AddressType                       | External Branch | Internal Branch
-    ---------------------------------------------------------------------
-    WITNESS_PUBKEY_HASH               | P2WPKH          | P2WPKH
-    NESTED_WITNESS_PUBKEY_HASH        | NP2WPKH         | NP2WPKH
-    HYBRID_NESTED_WITNESS_PUBKEY_HASH | NP2WPKH         | P2WPKH
-    */
+    // The type of addresses the account supports.
     AddressType address_type = 2;
 
     /*
@@ -353,6 +458,50 @@ message Account {
     // Whether the wallet stores private keys for the account.
     bool watch_only = 8;
 }
+
+message AddressProperty {
+    /*
+    The address encoded using the appropriate format depending on the
+    address type (base58, bech32, bech32m).
+
+    Note that lnd's internal/custom keys for channels and other
+    functionality are derived from the same scope. Since they
+    aren't really used as addresses and will never have an
+    on-chain balance, we'll show the public key instead (only if
+    the show_custom_accounts flag is provided).
+    */
+    string address = 1;
+
+    // Denotes if the address is a change address.
+    bool is_internal = 2;
+
+    // The balance of the address.
+    int64 balance = 3;
+}
+
+message AccountWithAddresses {
+    // The name used to identify the account.
+    string name = 1;
+
+    // The type of addresses the account supports.
+    AddressType address_type = 2;
+
+    /*
+    The derivation path corresponding to the account public key. This will
+    always be empty for the default imported account in which single public keys
+    are imported into.
+    */
+    string derivation_path = 3;
+
+    /*
+    List of address, its type internal/external & balance.
+    Note that the order of addresses will be random and not according to the
+    derivation index, since that information is not stored by the underlying
+    wallet.
+    */
+    repeated AddressProperty addresses = 4;
+}
+
 message ListAccountsRequest {
     // An optional filter to only return accounts matching this name.
     string name = 1;
@@ -360,8 +509,70 @@ message ListAccountsRequest {
     // An optional filter to only return accounts matching this address type.
     AddressType address_type = 2;
 }
+
 message ListAccountsResponse {
     repeated Account accounts = 1;
+}
+
+message RequiredReserveRequest {
+    // The number of additional channels the user would like to open.
+    uint32 additional_public_channels = 1;
+}
+
+message RequiredReserveResponse {
+    // The amount of reserve required.
+    int64 required_reserve = 1;
+}
+
+message ListAddressesRequest {
+    // An optional filter to only return addresses matching this account.
+    string account_name = 1;
+
+    // An optional flag to return LND's custom accounts (Purpose=1017)
+    // public key along with other addresses.
+    bool show_custom_accounts = 2;
+}
+
+message ListAddressesResponse {
+    // A list of all the accounts and their addresses.
+    repeated AccountWithAddresses account_with_addresses = 1;
+}
+
+message SignMessageWithAddrRequest {
+    // The message to be signed. When using REST, this field must be encoded as
+    // base64.
+    bytes msg = 1;
+
+    // The address which will be used to look up the private key and sign the
+    // corresponding message.
+    string addr = 2;
+}
+
+message SignMessageWithAddrResponse {
+    // The compact ECDSA signature for the given message encoded in base64.
+    string signature = 1;
+}
+
+message VerifyMessageWithAddrRequest {
+    // The message to be signed. When using REST, this field must be encoded as
+    // base64.
+    bytes msg = 1;
+
+    // The compact ECDSA signature to be verified over the given message
+    // ecoded in base64.
+    string signature = 2;
+
+    // The address which will be used to look up the public key and verify the
+    // the signature.
+    string addr = 3;
+}
+
+message VerifyMessageWithAddrResponse {
+    // Whether the signature was valid over the given message.
+    bool valid = 1;
+
+    // The pubkey recovered from the signature.
+    bytes pubkey = 2;
 }
 
 message ImportAccountRequest {
@@ -426,6 +637,77 @@ message ImportPublicKeyRequest {
     AddressType address_type = 2;
 }
 message ImportPublicKeyResponse {
+}
+
+message ImportTapscriptRequest {
+    /*
+    The internal public key, serialized as 32-byte x-only public key.
+    */
+    bytes internal_public_key = 1;
+
+    oneof script {
+        /*
+        The full script tree with all individual leaves is known and the root
+        hash can be constructed from the full tree directly.
+        */
+        TapscriptFullTree full_tree = 2;
+
+        /*
+        Only a single script leaf is known. To construct the root hash, the full
+        inclusion proof must also be provided.
+        */
+        TapscriptPartialReveal partial_reveal = 3;
+
+        /*
+        Only the root hash of the Taproot script tree (or other form of Taproot
+        commitment) is known.
+        */
+        bytes root_hash_only = 4;
+
+        /*
+        Only the final, tweaked Taproot key is known and no additional
+        information about the internal key or type of tweak that was used to
+        derive it. When this is set, the wallet treats the key in
+        internal_public_key as the Taproot key directly. This can be useful for
+        tracking arbitrary Taproot outputs without the goal of ever being able
+        to spend from them through the internal wallet.
+        */
+        bool full_key_only = 5;
+    }
+}
+
+message TapscriptFullTree {
+    /*
+    The complete, ordered list of all tap leaves of the tree.
+    */
+    repeated TapLeaf all_leaves = 1;
+}
+
+message TapLeaf {
+    // The leaf version. Should be 0xc0 (192) in case of a SegWit v1 script.
+    uint32 leaf_version = 1;
+
+    // The script of the tap leaf.
+    bytes script = 2;
+}
+
+message TapscriptPartialReveal {
+    // The tap leaf that is known and will be revealed.
+    TapLeaf revealed_leaf = 1;
+
+    // The BIP-0341 serialized inclusion proof that is required to prove that
+    // the revealed leaf is part of the tree. This contains 0..n blocks of 32
+    // bytes. If the tree only contained a single leaf (which is the revealed
+    // leaf), this can be empty.
+    bytes full_inclusion_proof = 2;
+}
+
+message ImportTapscriptResponse {
+    /*
+    The resulting pay-to-Taproot address that represents the imported internal
+    key with the script committed to it.
+    */
+    string p2tr_address = 1;
 }
 
 message Transaction {
@@ -581,6 +863,76 @@ enum WitnessType {
     transaction.
     */
     COMMITMENT_ANCHOR = 13;
+
+    /*
+    A witness type that is similar to the COMMITMENT_NO_DELAY type,
+    but it omits the tweak that randomizes the key we need to
+    spend with a channel peer supplied set of randomness.
+    */
+    COMMITMENT_NO_DELAY_TWEAKLESS = 14;
+
+    /*
+    A witness type that allows us to spend our output on the counterparty's
+    commitment transaction after a confirmation.
+    */
+    COMMITMENT_TO_REMOTE_CONFIRMED = 15;
+
+    /*
+    A witness type that allows us to sweep an HTLC output that we extended
+    to a party, but was never fulfilled. This _is_ the HTLC output directly
+    on our commitment transaction, and the input to the second-level HTLC
+    timeout transaction. It can only be spent after CLTV expiry, and
+    commitment confirmation.
+    */
+    HTLC_OFFERED_TIMEOUT_SECOND_LEVEL_INPUT_CONFIRMED = 16;
+
+    /*
+    A witness type that allows us to sweep an HTLC output that was offered
+    to us, and for which we have a payment preimage. This _is_ the HTLC
+    output directly on our commitment transaction, and the input to the
+    second-level HTLC success transaction. It can only be spent after the
+    commitment has confirmed.
+    */
+    HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL_INPUT_CONFIRMED = 17;
+
+    /*
+    A witness type that allows us to spend our output on our local
+    commitment transaction after a relative and absolute lock-time lockout as
+    part of the script enforced lease commitment type.
+    */
+    LEASE_COMMITMENT_TIME_LOCK = 18;
+
+    /*
+    A witness type that allows us to spend our output on the counterparty's
+    commitment transaction after a confirmation and absolute locktime as part
+    of the script enforced lease commitment type.
+    */
+    LEASE_COMMITMENT_TO_REMOTE_CONFIRMED = 19;
+
+    /*
+    A witness type that allows us to sweep an HTLC output that we extended
+    to a party, but was never fulfilled. This HTLC output isn't directly on
+    the commitment transaction, but is the result of a confirmed second-level
+    HTLC transaction. As a result, we can only spend this after a CSV delay
+    and CLTV locktime as part of the script enforced lease commitment type.
+    */
+    LEASE_HTLC_OFFERED_TIMEOUT_SECOND_LEVEL = 20;
+
+    /*
+    A witness type that allows us to sweep an HTLC output that was offered
+    to us, and for which we have a payment preimage. This HTLC output isn't
+    directly on our commitment transaction, but is the result of confirmed
+    second-level HTLC transaction. As a result, we can only spend this after
+    a CSV delay and CLTV locktime as part of the script enforced lease
+    commitment type.
+    */
+    LEASE_HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL = 21;
+
+    /*
+    A witness type that allows us to spend a regular p2tr output that's sent
+    to an output which is under complete control of the backing wallet.
+    */
+    TAPROOT_PUB_KEY_SPEND = 22;
 }
 
 message PendingSweep {
@@ -700,7 +1052,8 @@ message ListSweepsResponse {
 }
 
 message LabelTransactionRequest {
-    // The txid of the transaction to label.
+    // The txid of the transaction to label. Note: When using gRPC, the bytes
+    // must be in little-endian (reverse) order.
     bytes txid = 1;
 
     // The label to add to the transaction, limited to 500 characters.
@@ -711,6 +1064,23 @@ message LabelTransactionRequest {
 }
 
 message LabelTransactionResponse {
+}
+
+// The possible change address types for default accounts and single imported
+// public keys. By default, P2WPKH will be used. We don't provide the
+// possibility to choose P2PKH as it is a legacy key scope, nor NP2WPKH as
+// no key scope permits to do so. For custom accounts, no change type should
+// be provided as the coin selection key scope will always be used to generate
+// the change address.
+enum ChangeAddressType {
+    // CHANGE_ADDRESS_TYPE_UNSPECIFIED indicates that no change address type is
+    // provided. We will then use P2WPKH address type for change (BIP0084 key
+    // scope).
+    CHANGE_ADDRESS_TYPE_UNSPECIFIED = 0;
+
+    // CHANGE_ADDRESS_TYPE_P2TR indicates to use P2TR address for change output
+    // (BIP0086 key scope).
+    CHANGE_ADDRESS_TYPE_P2TR = 1;
 }
 
 message FundPsbtRequest {
@@ -758,6 +1128,12 @@ message FundPsbtRequest {
 
     // Whether unconfirmed outputs should be used as inputs for the transaction.
     bool spend_unconfirmed = 7;
+
+    // The address type for the change. If empty, P2WPKH addresses will be used
+    // for default accounts and single imported public keys. For custom
+    // accounts, no change type should be provided as the coin selection key
+    // scope will always be used to generate the change address.
+    ChangeAddressType change_type = 8;
 }
 message FundPsbtResponse {
     /*
@@ -808,6 +1184,32 @@ message UtxoLease {
     The absolute expiration of the output lease represented as a unix timestamp.
     */
     uint64 expiration = 3;
+
+    /*
+    The public key script of the leased output.
+    */
+    bytes pk_script = 4;
+
+    /*
+    The value of the leased output in satoshis.
+    */
+    uint64 value = 5;
+}
+
+message SignPsbtRequest {
+    /*
+    The PSBT that should be signed. The PSBT must contain all required inputs,
+    outputs, UTXO data and custom fields required to identify the signing key.
+    */
+    bytes funded_psbt = 1;
+}
+
+message SignPsbtResponse {
+    // The signed transaction in PSBT format.
+    bytes signed_psbt = 1;
+
+    // The indices of signed inputs.
+    repeated uint32 signed_inputs = 2;
 }
 
 message FinalizePsbtRequest {
