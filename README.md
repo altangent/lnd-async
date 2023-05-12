@@ -123,6 +123,10 @@ async function getInfo() {
 
 ## Versions
 
+- 4.2.0 - Updated the protocol in accordance with LND v0.16.2-beta,
+          Mocha-based tests can be run with any parameters in the developer's .env file,
+          Bugs have been fixed based on the tests,
+          Updated dependencies to new ones with no known vulnerabilities
 - 4.1.3 - Updated for v0.13.1-beta, all proto services + the update of doc
 - 4.1.0 - Updated for v0.11.1-beta, now includes all proto services
 - 4.0.0 - Updated for 0.8.1-beta, now includes all proto services
