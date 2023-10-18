@@ -2,7 +2,7 @@
 
 This library simplifies connecting to the Bitcoin Lightning Network Daemon via gRPC. It wraps all callback functions in promises to make api calls easier to work with.
 
-This library supports LND version 0.16.2-beta.
+This library supports LND version 0.17.0-beta.
 
 The default behavior assumes LND is running on `localhost` port `10009`. It also assumes that macaroons are enabled and the `tls.cert` and `admin.macaroon` are found in the OS specific default data paths.
 
@@ -123,6 +123,7 @@ async function getInfo() {
 
 ## Versions
 
+- 4.2.1 - Updated the protocol in accordance with LND v0.17.0-beta
 - 4.2.0 - Updated the protocol in accordance with LND v0.16.2-beta,
           Mocha-based tests can be run with any parameters in the developer's .env file,
           Bugs have been fixed based on the tests,
