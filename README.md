@@ -123,6 +123,7 @@ async function getInfo() {
 
 ## Versions
 
+- 4.2.2 - Updated the protocol in accordance with LND v0.18.0-beta
 - 4.2.1 - Updated the protocol in accordance with LND v0.17.0-beta
 - 4.2.0 - Updated the protocol in accordance with LND v0.16.2-beta,
           Mocha-based tests can be run with any parameters in the developer's .env file,
