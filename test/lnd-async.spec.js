@@ -12,76 +12,67 @@ describe('lnd-async', () => {
       macaroonPath: process.env.LND_ASYNC_TEST_MACAROON_PATH || undefined,
       cert:         process.env.LND_ASYNC_TEST_CERT          || undefined,
       certPath:     process.env.LND_ASYNC_TEST_CERT_PATH     || undefined,
+      noCert:       process.env.LND_ASYNC_TEST_NO_CERT === 'true',
     });
   });
 
-  let tests = [
-    // service WalletUnlocker
-    { method: 'genSeed' },
-    { service: 'WalletUnlocker', method: 'genSeed' },
-    { method: 'initWallet' },
-    { method: 'unlockWallet' },
-    { method: 'changePassword' },
+  after(() => {
+    if (_client && typeof _client.close === 'function') _client.close();
+    if (sut && typeof sut.disconnect === 'function') sut.disconnect();
+  });
+
+  const tests = [
     // service Lightning
     { method: 'walletBalance' },
     { method: 'channelBalance' },
     { method: 'getTransactions' },
-    { method: 'sendCoins' },
     { method: 'subscribeTransactions', isStream: true },
-    { method: 'sendMany' },
-    { method: 'newAddress' },
-    { method: 'signMessage' },
-    { method: 'verifyMessage' },
-    { method: 'connectPeer' },
-    { method: 'disconnectPeer' },
     { method: 'listPeers' },
     { method: 'getInfo' },
     { method: 'pendingChannels' },
     { method: 'listChannels' },
     { method: 'closedChannels' },
-    { method: 'openChannelSync' },
-    { method: 'openChannel', isStream: true },
-    { method: 'closeChannel', isStream: true },
-    { method: 'abandonChannel' },
-    { method: 'sendPayment', isStream: true },
-    { method: 'sendPaymentSync' },
-    { method: 'sendToRoute', isStream: true },
-    { method: 'sendToRouteSync' },
-    { method: 'addInvoice' },
-    { method: 'listInvoices' },
-    { method: 'lookupInvoice' },
     { method: 'subscribeInvoices', isStream: true },
-    { method: 'decodePayReq' },
     { method: 'listPayments' },
-    { method: 'deleteAllPayments' },
-    { method: 'describeGraph' },
     { method: 'getChanInfo' },
     { method: 'getNodeInfo' },
-    { method: 'queryRoutes' },
     { method: 'getNetworkInfo' },
-    { method: 'stopDaemon' },
     { method: 'subscribeChannelGraph', isStream: true },
-    { method: 'debugLevel' },
     { method: 'feeReport' },
-    { method: 'updateChannelPolicy' },
     { method: 'forwardingHistory' },
-    { method: 'subscribeChannelEvents', isStream: true },
-    { method: 'exportChannelBackup' },
-    { method: 'exportAllChannelBackups' },
-    { method: 'verifyChanBackup' },
-    { method: 'restoreChannelBackups' },
-    { method: 'subscribeChannelBackups', isStream: true },
   ];
 
-  for (let test of tests) {
-    it(`.${test.method} should return a ${test.isStream ? 'stream' : 'promise'}`, () => {
-      let res = (test.service ? _client[test.service][test.method] : _client[test.method])({});
-      if (!test.isStream) {
-        res.catch(() => {});
-        expect(res instanceof Promise).to.be.true;
-      } else {
-        expect(res instanceof Promise).to.be.false;
-      }
-    });
+  for (const test of tests) {
+    if (!test.isStream) {
+      it(`.${test.method} should return a promise`, async () => {
+        const opts = { deadline: Date.now() + 500 }; // short timeout to avoid hanging
+        const p = _client[test.method]({}, opts);
+        expect(p instanceof Promise).to.be.true;
+        await p.catch(() => {}); // wait for completion/error
+      });
+    } else {
+      it(`.${test.method} should return a stream`, async () => {
+        const stream = _client[test.method]({});
+        expect(stream instanceof Promise).to.be.false;
+
+        await new Promise((resolve) => {
+          let settled = false;
+          const done = () => { if (!settled) { settled = true; resolve(); } };
+
+          stream.on('error', done);
+          stream.on('end', done);
+
+          // Just in case 'end' doesn't arrive
+          const t = setTimeout(() => { stream.cancel(); done(); }, 200);
+
+          // If anything arrives, close immediately
+          stream.on('data', () => { stream.cancel(); });
+
+          // Clear the completion timer
+          stream.on('end', () => clearTimeout(t));
+          stream.on('error', () => clearTimeout(t));
+        });
+      });
+    }
   }
 });

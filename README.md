@@ -2,7 +2,7 @@
 
 This library simplifies connecting to the Bitcoin Lightning Network Daemon via gRPC. It wraps all callback functions in promises to make api calls easier to work with.
 
-This library supports LND version 0.17.0-beta.
+This library supports LND version 0.18.5-beta.
 
 The default behavior assumes LND is running on `localhost` port `10009`. It also assumes that macaroons are enabled and the `tls.cert` and `admin.macaroon` are found in the OS specific default data paths.
 
@@ -60,6 +60,16 @@ async function getInfo() {
 }
 ```
 
+You can also connect using a TLS server certificate signed by public certificate authorities by passing the `noCert` flag. When this option is supplied, the `certPath` (and `cert`) is ignored.
+```javascript
+const lnd = require('lnd-async');
+
+async function getInfo() {
+  let client = await lnd.connect({ noCert: true });
+  return await client.getInfo({});
+}
+```
+
 ### How work with services
 
 By default the `lnd-async` uses `Lightning` service but you can call certain methods of other services:
@@ -72,7 +82,7 @@ await client.Invoices.settleInvoice({preimage})
 await client.connectPeer({addr: {pubkey, host}, perm: false})
 
 // The stream method:
-const grpc = require('grpc')
+const grpc = require('@grpc/grpc-js')
 let stream = client.Invoices.subscribeSingleInvoice({r_hash: hash})
 
 stream.on('data', async data => {
@@ -99,7 +109,6 @@ stream.on('error', (e) => {
         error(e)
     }
 })
-
 ```
 
 ### Long integer treatment
@@ -123,6 +132,7 @@ async function getInfo() {
 
 ## Versions
 
+- 4.3.0 - Migrated from `grpc` to `@grpc/grpc-js`, added `noCert` option to `.connect()`, updated real-connection tests to avoid dangerous LND commands
 - 4.2.3 - Updated the protocol in accordance with LND v0.18.5-beta
 - 4.2.2 - Updated the protocol in accordance with LND v0.18.0-beta
 - 4.2.1 - Updated the protocol in accordance with LND v0.17.0-beta
