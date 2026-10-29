@@ -1,6 +1,6 @@
 {
   "name": "lnd-async",
-  "version": "4.2.4",
+  "version": "5.0.0",
   "description": "Lightning Network Daemon (LND) gRPC client with native promise support",
   "keywords": [
     "lnd",
@@ -8,13 +8,18 @@
     "promise",
     "lightning network",
     "bitcoin",
-    "litecoin"
+    "litecoin",
+    "typescript"
   ],
   "author": "Brian Mancini <bmancini@gmail.com>",
   "license": "MIT",
   "main": "lib/lnd-async",
+  "types": "lib/lnd-async.d.ts",
+  "files": [
+    "lib"
+  ],
   "engines": {
-    "node": ">= 10.0.0"
+    "node": ">= 12.10.0"
   },
   "directories": {
     "lib": "lib"
@@ -28,7 +33,9 @@
     "url": "git+https://github.com/altangent/lnd-async.git"
   },
   "scripts": {
-    "test": "mocha test/**/*.js -r dotenv/config"
+    "test": "mocha \"test/**/*.spec.js\" -r dotenv/config && npm run test:types",
+    "test:types": "tsc -p test/types",
+    "generate-types": "node util-scripts/generate-types.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.0",
@@ -36,11 +43,14 @@
     "protobufjs": "^6.10.2"
   },
   "devDependencies": {
+    "@types/node": "^22.20.5",
     "chai": "^4.2.0",
     "dotenv": "^16.0.3",
     "eslint": "^8.40.0",
     "mocha": "^10.2.0",
     "prettier": "^1.14.3",
-    "sinon": "^4.5.0"
+    "protobufjs-7": "npm:protobufjs@^7.6.6",
+    "sinon": "^4.5.0",
+    "typescript": "^5.9.3"
   }
 }
